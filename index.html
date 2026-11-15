@@ -74,6 +74,7 @@ input,select,button{font-family:inherit;font-size:14px;color:inherit}
       <input value="{{ teamText }}" onChange="{{ onTeam }}" placeholder="Names, separated by commas" spellCheck="false" style="flex:1;min-width:0;padding:7px 10px;border:1px solid #ddd5cb;border-radius:6px">
     </label>
     <div style="display:flex;gap:8px;margin-left:auto">
+      <button onClick="{{ importTasks }}" style="display:{{ importDisplay }};padding:8px 14px;border:1px solid #ddd5cb;background:#fff;border-radius:6px;cursor:pointer">Import</button>
       <button onClick="{{ doPrint }}" style="padding:8px 14px;border:1px solid #ddd5cb;background:#fff;border-radius:6px;cursor:pointer">Print</button>
       <button onClick="{{ exportCsv }}" style="padding:8px 14px;border:0;background:#2b2622;color:#fff;border-radius:6px;cursor:pointer;font-weight:500">Export to Excel</button>
     </div>
@@ -239,6 +240,25 @@ class Component extends DCLogic {
     if (this.resetAlert.delete(id)) row.alerted_on = null;
     this.send(id, this.db.from('items').upsert(row));
   }
+  importTasks() {
+    const inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.json,application/json';
+    inp.onchange = async () => {
+      const f = inp.files && inp.files[0]; if (!f) return;
+      let data; try { data = JSON.parse(await f.text()); } catch (e) { window.alert('That file could not be read.'); return; }
+      const src = Array.isArray(data) ? data : (data && data.items) || [];
+      const rows = src.filter(i => i && (String(i.title||'').trim() || String(i.next||'').trim() || (i.steps||[]).length)).map(i => ({
+        id: String(i.id || uid()), category: CATS.includes(i.category) ? i.category : CATS[0], title: String(i.title||'').trim(), owner: String(i.owner||''),
+        deadline: /^\d{4}-\d{2}-\d{2}$/.test(i.deadline||'') ? i.deadline : '', status: STATUS[i.status] ? i.status : 'To do',
+        priority: ['High','Medium','Low'].includes(i.priority) ? i.priority : 'Medium', next: clean(i.next),
+        steps: (Array.isArray(i.steps) ? i.steps : []).map(s => ({id:String(s.id||uid()), text:String(s.text||''), done:!!s.done}))}));
+      if (!rows.length) { window.alert('No tasks found in that file.'); return; }
+      if (!window.confirm('Import ' + rows.length + ' task' + (rows.length === 1 ? '' : 's') + ' to the shared board?')) return;
+      const ids = new Set(rows.map(r => r.id));
+      rows.forEach(r => this.gone.delete(r.id));
+      this.save({items: [...this.state.items.filter(i => !ids.has(i.id)), ...rows]});
+    };
+    inp.click();
+  }
   gate() {
     const {mode='loading', user='', loaded, syncError, authErr} = this.state, on = mode === 'online';
     return {
@@ -248,6 +268,7 @@ class Component extends DCLogic {
       signInDisplay: mode === 'signin' ? 'inline-flex' : 'none',
       signIn: () => this.db.auth.signInWithOAuth({provider:'azure', options:{scopes:'email', redirectTo: location.origin + location.pathname}}),
       signOut: () => this.db.auth.signOut(), signOutDisplay: on ? 'inline' : 'none',
+      importTasks: () => this.importTasks(), importDisplay: on ? 'inline-block' : 'none',
       modeLabel: syncError ? 'Not saved: ' + syncError : on ? 'Shared board · signed in as ' + user : 'Not connected · saved in this browser only',
       modeColor: syncError ? '#a3391c' : '#6b625a',
       footNote: on ? 'Changes save automatically and appear for everyone on the team. “Export to Excel” downloads a copy.' : 'Saved automatically in this browser. “Export to Excel” downloads a file that opens in Excel or Google Sheets.'
