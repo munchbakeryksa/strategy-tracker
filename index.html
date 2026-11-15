@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Strategy Tracker</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#f6f3ee;color:#2b2622;font-family:'IBM Plex Sans',system-ui,sans-serif;}
+a{color:#a4532e}a:hover{color:#7d3c1f}
+input,select,button{font-family:inherit;font-size:14px;color:inherit}
+@media print{.noprint{display:none!important}body{background:#fff}}
+[data-notes]:empty:before{content:attr(data-ph);color:#9a9088}
+[data-notes]:focus{border-color:#ddd5cb!important;background:#fff!important}
+</style>
+</helmet>
+<div style="position:fixed;inset:0;z-index:50;display:{{ gateDisplay }};align-items:center;justify-content:center;background:#f6f3ee;padding:24px">
+  <div style="display:flex;flex-direction:column;gap:14px;align-items:flex-start;max-width:420px;padding:32px;background:#fff;border:1px solid #e6e0d8;border-radius:12px">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#6b625a">Daily strategy meeting</div>
+    <h1 style="margin:0;font-size:26px;font-weight:600">Strategy Tracker</h1>
+    <div style="font-size:14px;line-height:1.5;color:#6b625a">{{ gateMsg }}</div>
+    <button onClick="{{ signIn }}" style="display:{{ signInDisplay }};align-items:center;padding:10px 16px;border:0;border-radius:6px;background:#2b2622;color:#fff;font-weight:500;cursor:pointer">Sign in with Microsoft</button>
+  </div>
+</div>
+<div style="max-width:1280px;margin:0 auto;padding:32px 24px 64px;display:flex;flex-direction:column;gap:24px">
+  <header style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px">
+    <div style="display:flex;flex-direction:column;gap:4px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#6b625a">Daily strategy meeting</div>
+      <h1 style="margin:0;font-size:32px;font-weight:600;letter-spacing:-.01em">Strategy Tracker</h1>
+      <div style="font-size:14px;color:#6b625a">{{ todayLabel }}</div>
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:12px;color:{{ modeColor }}">
+        <span>{{ modeLabel }}</span>
+        <button class="noprint" onClick="{{ signOut }}" style="display:{{ signOutDisplay }};border:0;background:transparent;color:#a4532e;cursor:pointer;font-size:12px;padding:0;text-decoration:underline">Sign out</button>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <div style="display:flex;flex-direction:column;gap:2px;padding:10px 16px;background:#fff;border:1px solid #e6e0d8;border-radius:8px;min-width:84px">
+        <span style="font-size:22px;font-weight:600">{{ stats.active }}<span style="font-size:14px;color:#8a8077;font-weight:400"> / 10</span></span>
+        <span style="font-size:12px;color:#6b625a">Active</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:2px;padding:10px 16px;background:#fff;border:1px solid #e6e0d8;border-radius:8px;min-width:84px">
+        <span style="font-size:22px;font-weight:600;color:{{ stats.overdueColor }}">{{ stats.overdue }}</span>
+        <span style="font-size:12px;color:#6b625a">Overdue</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:2px;padding:10px 16px;background:#fff;border:1px solid #e6e0d8;border-radius:8px;min-width:84px">
+        <span style="font-size:22px;font-weight:600">{{ stats.week }}</span>
+        <span style="font-size:12px;color:#6b625a">Due in 7 days</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:2px;padding:10px 16px;background:#fff;border:1px solid #e6e0d8;border-radius:8px;min-width:84px">
+        <span style="font-size:22px;font-weight:600">{{ stats.done }}</span>
+        <span style="font-size:12px;color:#6b625a">Done</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="noprint" style="display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:12px;background:#fff;border:1px solid #e6e0d8;border-radius:10px">
+    <div style="display:flex;background:#f1ece5;border-radius:7px;padding:3px;gap:2px">
+      <button onClick="{{ setViewCat }}" style="border:0;padding:7px 12px;border-radius:5px;cursor:pointer;background:{{ viewCatBg }};font-weight:500">By category</button>
+      <button onClick="{{ setViewDate }}" style="border:0;padding:7px 12px;border-radius:5px;cursor:pointer;background:{{ viewDateBg }};font-weight:500">By deadline</button>
+    </div>
+    <select value="{{ personFilter }}" onChange="{{ onPerson }}" style="padding:7px 10px;border:1px solid #ddd5cb;border-radius:6px;background:#fff">
+      <option value="">Everyone</option>
+      <sc-for list="{{ team }}" as="p"><option value="{{ p }}">{{ p }}</option></sc-for>
+    </select>
+    <label style="display:flex;align-items:center;gap:6px;font-size:14px;cursor:pointer"><input type="checkbox" checked="{{ hideDone }}" onChange="{{ toggleDone }}">Hide done</label>
+    <label style="display:flex;align-items:center;gap:8px;font-size:14px;flex:1 1 260px;min-width:0">
+      <span style="color:#6b625a">Team</span>
+      <input value="{{ teamText }}" onChange="{{ onTeam }}" placeholder="Names, separated by commas" spellCheck="false" style="flex:1;min-width:0;padding:7px 10px;border:1px solid #ddd5cb;border-radius:6px">
+    </label>
+    <div style="display:flex;gap:8px;margin-left:auto">
+      <button onClick="{{ doPrint }}" style="padding:8px 14px;border:1px solid #ddd5cb;background:#fff;border-radius:6px;cursor:pointer">Print</button>
+      <button onClick="{{ exportCsv }}" style="padding:8px 14px;border:0;background:#2b2622;color:#fff;border-radius:6px;cursor:pointer;font-weight:500">Export to Excel</button>
+    </div>
+  </div>
+
+  <sc-for list="{{ groups }}" as="g" hint-placeholder-count="3">
+    <section style="display:flex;flex-direction:column;background:#fff;border:1px solid #e6e0d8;border-radius:10px;overflow:hidden">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;border-bottom:1px solid #eee8e0;background:#fbf9f6">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="width:10px;height:10px;border-radius:50%;background:{{ g.color }}"></span>
+          <h2 style="margin:0;font-size:16px;font-weight:600">{{ g.name }}</h2>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a8077">{{ g.count }}</span>
+        </div>
+        <button class="noprint" onClick="{{ g.add }}" style="border:0;background:transparent;color:#a4532e;cursor:pointer;font-weight:500;padding:4px 6px">+ Add item</button>
+      </div>
+      <div style="overflow-x:auto">
+        <div style="min-width:1280px">
+          <div style="display:grid;grid-template-columns:minmax(220px,2fr) 140px 130px 140px 130px 100px minmax(340px,3fr);gap:8px;padding:8px 16px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#8a8077">
+            <span>Topic</span><span>Category</span><span>Owner</span><span>Deadline</span><span>Status</span><span>Priority</span><span>Next step / notes</span>
+          </div>
+          <sc-for list="{{ g.items }}" as="it">
+            <div style="display:grid;grid-template-columns:minmax(220px,2fr) 140px 130px 140px 130px 100px minmax(340px,3fr);gap:8px;padding:10px 16px;align-items:start;border-top:1px solid #f1ece5;background:{{ it.rowBg }}">
+              <div style="display:flex;flex-direction:column;gap:2px;min-width:0">
+                <div style="display:flex;align-items:center;gap:6px;min-width:0">
+                  <button class="noprint" onClick="{{ it.remove }}" title="Delete task" aria-label="Delete task" style="flex:none;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid #e6e0d8;border-radius:5px;background:#fff;color:#a3391c;cursor:pointer;font-size:16px;line-height:1;padding:0" style-hover="background:#a3391c;color:#fff;border-color:#a3391c">×</button>
+                  <input value="{{ it.title }}" onChange="{{ it.setTitle }}" placeholder="What are we tracking?" style="flex:1;min-width:0;padding:7px 8px;border:1px solid transparent;border-radius:5px;background:transparent;font-weight:500;text-decoration:{{ it.strike }}" style-focus="border-color:#ddd5cb;background:#fff;outline:none">
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;padding-left:38px">
+                  <button class="noprint" onClick="{{ it.addStep }}" style="border:0;background:transparent;color:#a4532e;cursor:pointer;font-size:12px;font-weight:500;padding:2px 0">+ Sub-step</button>
+                  
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6b625a">{{ it.stepsLabel }}</span>
+                </div>
+              </div>
+              <select value="{{ it.category }}" onChange="{{ it.setCategory }}" style="height:32px;box-sizing:border-box;padding:0 6px;border:1px solid #e6e0d8;border-radius:5px;background:#fff;font-size:13px">
+                <sc-for list="{{ categories }}" as="c"><option value="{{ c }}">{{ c }}</option></sc-for>
+              </select>
+              <select value="{{ it.owner }}" onChange="{{ it.setOwner }}" style="height:32px;box-sizing:border-box;padding:0 6px;border:1px solid #e6e0d8;border-radius:5px;background:#fff;font-size:13px">
+                <option value="">Unassigned</option>
+                <sc-for list="{{ team }}" as="p"><option value="{{ p }}">{{ p }}</option></sc-for>
+              </select>
+              <div style="position:relative;display:flex;flex-direction:column">
+                <input type="date" value="{{ it.deadline }}" onChange="{{ it.setDeadline }}" style="height:32px;box-sizing:border-box;padding:0 6px;border:1px solid {{ it.dateBorder }};border-radius:5px;background:#fff;font-size:13px;color:{{ it.dateColor }}">
+                <span style="position:absolute;top:100%;left:0;margin-top:2px;white-space:nowrap;font-size:11px;color:{{ it.dateColor }};font-weight:500">{{ it.dueLabel }}</span>
+              </div>
+              <select value="{{ it.status }}" onChange="{{ it.setStatus }}" style="height:32px;box-sizing:border-box;padding:0 8px;border:0;border-radius:999px;font-size:13px;font-weight:500;background:{{ it.statusBg }};color:{{ it.statusFg }};cursor:pointer">
+                <option value="To do">To do</option><option value="In progress">In progress</option><option value="Blocked">Blocked</option><option value="Done">Done</option>
+              </select>
+              <select value="{{ it.priority }}" onChange="{{ it.setPriority }}" style="height:32px;box-sizing:border-box;padding:0 6px;border:1px solid #e6e0d8;border-radius:5px;background:#fff;font-size:13px;color:{{ it.prioColor }};font-weight:500">
+                <option value="High">High</option><option value="Medium">Medium</option><option value="Low">Low</option>
+              </select>
+              <div style="display:flex;flex-direction:column;gap:4px;min-width:0">
+                {{ it.notesEl }}
+                <div class="noprint" style="display:flex;gap:6px">
+                  <button onMouseDown="{{ it.hlOn }}" title="Select text in the box, then click" style="border:0;padding:3px 8px;border-radius:4px;background:#ffe27a;color:#4a3d00;font-size:11px;font-weight:500;cursor:pointer">Highlight</button>
+                  <button onMouseDown="{{ it.hlOff }}" title="Select highlighted text, then click" style="border:1px solid #e6e0d8;padding:2px 8px;border-radius:4px;background:#fff;color:#6b625a;font-size:11px;cursor:pointer">Remove highlight</button>
+                </div>
+              </div>
+              
+              <div style="grid-column:1 / -1;display:{{ it.stepsDisplay }};flex-direction:column;gap:2px;padding:0 0 6px 8px;max-width:760px">
+                <sc-for list="{{ it.stepList }}" as="s">
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <input type="checkbox" checked="{{ s.done }}" onChange="{{ s.toggle }}" style="width:16px;height:16px;margin:0;accent-color:#2f5a33;cursor:pointer;flex:none">
+                    <input value="{{ s.text }}" onChange="{{ s.setText }}" placeholder="Sub-step…" style="flex:1;min-width:0;padding:5px 8px;border:1px solid transparent;border-radius:5px;background:transparent;font-size:13px;color:{{ s.color }};text-decoration:{{ s.strike }}" style-focus="border-color:#ddd5cb;background:#fff;outline:none">
+                    <button class="noprint" onClick="{{ s.remove }}" title="Remove sub-step" style="border:0;background:transparent;color:#b0a69c;cursor:pointer;font-size:16px;line-height:1;padding:4px" style-hover="color:#a4532e">×</button>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+          <sc-if value="{{ g.empty }}">
+            <div style="padding:14px 16px;border-top:1px solid #f1ece5;font-size:13px;color:#9a9088">Nothing here yet.</div>
+          </sc-if>
+        </div>
+      </div>
+    </section>
+  </sc-for>
+  <div style="font-size:12px;color:#6b625a">{{ footNote }}</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const CATS = ['Photo Shoot','Packaging','Product Launch','Seasonal','Store topics','Delivery applications','Media','Brand Collabs'];
+const HUES = [30,75,140,200,250,300,350,110];
+const KEY = 'strategy-tracker-v1';
+const iso = d => d.toISOString().slice(0,10);
+const addDays = n => { const d = new Date(); d.setDate(d.getDate()+n); return iso(d); };
+const uid = () => Math.random().toString(36).slice(2,9);
+const SEED = [
+  {category:'Photo Shoot',title:'Winter menu shoot',deadline:addDays(5),status:'In progress',priority:'High',next:'Confirm photographer + props list'},
+  {category:'Packaging',title:'New gift box design',deadline:addDays(12),status:'To do',priority:'Medium',next:'Get 2 supplier quotes'},
+  {category:'Seasonal',title:'Christmas collection',deadline:addDays(-1),status:'In progress',priority:'High',next:'Finalise flavours'},
+  {category:'Delivery applications',title:'Update photos on delivery apps',deadline:addDays(3),status:'To do',priority:'Medium',next:''}
+].map(x => ({id:uid(),owner:'',...x}));
+const STATUS = {'To do':[0.93,0.01,80,'#5d554e'],'In progress':[0.92,0.06,75,'#6e4f12'],'Blocked':[0.92,0.06,25,'#8a2f1d'],'Done':[0.92,0.06,150,'#2f5a33']};
+const toText = h => { const d = document.createElement('div'); d.innerHTML = String(h||'').replace(/<br\s*\/?>/gi,'\n').replace(/<\/(div|p)>/gi,'\n'); return d.textContent.trim(); };
+const NOTE_STYLE = {padding:'7px 8px',border:'1px solid #ece6de',borderRadius:5,background:'#fdfcfa',fontSize:13,lineHeight:1.45,minHeight:58,whiteSpace:'pre-wrap',overflowWrap:'anywhere',outline:'none'};
+const clean = h => { const b = new DOMParser().parseFromString(String(h||''),'text/html').body;
+  b.querySelectorAll('*').forEach(n => { if (!/^(SPAN|DIV|BR|FONT|P)$/.test(n.tagName)) { n.replaceWith(document.createTextNode(n.textContent)); return; }
+    const bg = n.style.backgroundColor; [...n.attributes].forEach(a => n.removeAttribute(a.name)); if (bg) n.style.backgroundColor = bg; });
+  return b.innerHTML; };
+const fromRow = r => ({id:r.id, category:r.category, title:r.title||'', owner:r.owner||'', deadline:r.deadline||'', status:r.status, priority:r.priority, next:clean(r.notes), steps:Array.isArray(r.steps)?r.steps:[]});
+const csvCell = v => '"' + String(v ?? '').replace(/"/g,'""') + '"';
+
+class Component extends DCLogic {
+  state = (() => {
+    try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.items) return {person:'',hideDone:false,...s,teamText:(!s.teamText||s.teamText==='Nahla Javed, Waad, Ahmed Kujuk')?'Nahla, Waad, Javed, Ahmad, Issam':s.teamText,view:'cat'}; } catch(e){}
+    return {items:SEED, teamText:'Nahla, Waad, Javed, Ahmad, Issam', view:'cat', person:'', hideDone:false};
+  })();
+  timers = {}; pending = new Set(); resetAlert = new Set(); gone = new Set(); editing = null;
+  async componentDidMount() {
+    const q = k => new URLSearchParams((location.hash||'').slice(1)).get(k) || new URLSearchParams(location.search).get(k);
+    const authErr = q('error_description') || '';
+    let cfg = null;
+    try { const r = await fetch('./config.json', {cache:'no-store'}); if (r.ok) cfg = await r.json(); } catch (e) {}
+    const url = cfg && String(cfg.supabaseUrl||'').trim(), key = cfg && String(cfg.supabaseKey||'').trim();
+    if (!url || !key || !/^https:\/\//.test(url) || /YOUR|PASTE/i.test(url + key)) { this.setState({mode:'local'}); return; }
+    try {
+      await new Promise((ok, no) => { const s = document.createElement('script'); s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'; s.onload = ok; s.onerror = no; document.head.appendChild(s); });
+      this.db = window.supabase.createClient(url, key);
+      this.setState({authErr});
+      this.db.auth.onAuthStateChange((ev, s) => setTimeout(() => this.onSession(s), 0));
+      const {data} = await this.db.auth.getSession();
+      this.onSession(data.session);
+    } catch (e) { this.setState({mode:'error'}); }
+  }
+  componentWillUnmount() { if (this.onFocus) window.removeEventListener('focus', this.onFocus); if (this.chan && this.db) this.db.removeChannel(this.chan); }
+  onSession(session) {
+    const email = session && session.user ? (session.user.email || 'signed in') : '';
+    if (!email) { this.userEmail = ''; this.setState({mode:'signin', user:'', loaded:false}); return; }
+    if (this.userEmail === email) return;
+    this.userEmail = email;
+    this.setState({mode:'online', user:email, items:[], loaded:false, syncError:''}, () => { this.pull(); this.listen(); });
+  }
+  async pull() {
+    if (!this.db || !this.userEmail) return;
+    const [a, b] = await Promise.all([this.db.from('items').select('*').order('created_at'), this.db.from('settings').select('*').eq('key','team').maybeSingle()]);
+    if (a.error) { this.setState({loaded:true, syncError:a.error.message}); return; }
+    const busy = id => this.pending.has(id) || this.editing === id;
+    const local = new Map(this.state.items.map(i => [i.id, i]));
+    const items = a.data.filter(r => !this.gone.has(r.id)).map(r => busy(r.id) && local.has(r.id) ? local.get(r.id) : fromRow(r));
+    this.state.items.forEach(i => { if (this.pending.has(i.id) && !items.some(x => x.id === i.id)) items.push(i); });
+    const patch = {items, loaded:true};
+    if (b.data && !this.pending.has('team')) patch.teamText = b.data.value || '';
+    this.setState(patch);
+  }
+  listen() {
+    if (this.chan) return;
+    const again = () => { clearTimeout(this.pullT); this.pullT = setTimeout(() => this.pull(), 300); };
+    this.chan = this.db.channel('board')
+      .on('postgres_changes', {event:'*', schema:'public', table:'items'}, again)
+      .on('postgres_changes', {event:'*', schema:'public', table:'settings'}, again).subscribe();
+    this.onFocus = again; window.addEventListener('focus', again);
+  }
+  queue(k, fn) { this.pending.add(k); clearTimeout(this.timers[k]); this.timers[k] = setTimeout(() => { delete this.timers[k]; fn(); }, 600); }
+  send(k, q) { q.then(({error}) => { if (!this.timers[k]) this.pending.delete(k); const m = error ? error.message : ''; if (m !== (this.state.syncError||'')) this.setState({syncError:m}); }); }
+  syncItems(prev, next) {
+    const pm = new Map(prev.map(i => [i.id, i])), nm = new Map(next.map(i => [i.id, i]));
+    prev.forEach(i => { if (!nm.has(i.id)) { clearTimeout(this.timers[i.id]); delete this.timers[i.id]; this.gone.add(i.id); this.send(i.id, this.db.from('items').delete().eq('id', i.id)); } });
+    next.forEach(i => { const o = pm.get(i.id); if (o === i) return; if (o && o.deadline !== i.deadline) this.resetAlert.add(i.id); this.queue(i.id, () => this.push(i.id)); });
+  }
+  push(id) {
+    const i = this.state.items.find(x => x.id === id); if (!i) { this.pending.delete(id); return; }
+    const row = {id:i.id, category:i.category, title:i.title||'', owner:i.owner||'', deadline:i.deadline||null, status:i.status, priority:i.priority, notes:i.next||'', steps:i.steps||[], updated_at:new Date().toISOString()};
+    if (this.resetAlert.delete(id)) row.alerted_on = null;
+    this.send(id, this.db.from('items').upsert(row));
+  }
+  gate() {
+    const {mode='loading', user='', loaded, syncError, authErr} = this.state, on = mode === 'online';
+    return {
+      gateDisplay: mode === 'local' || (on && loaded) ? 'none' : 'flex',
+      gateMsg: mode === 'signin' ? (authErr ? 'Sign-in did not complete: ' + authErr : 'Sign in with your work Microsoft account to open the shared board.')
+        : mode === 'error' ? 'Could not reach the shared board. Check your connection and reload the page.' : 'Loading…',
+      signInDisplay: mode === 'signin' ? 'inline-flex' : 'none',
+      signIn: () => this.db.auth.signInWithOAuth({provider:'azure', options:{scopes:'email', redirectTo: location.origin + location.pathname}}),
+      signOut: () => this.db.auth.signOut(), signOutDisplay: on ? 'inline' : 'none',
+      modeLabel: syncError ? 'Not saved: ' + syncError : on ? 'Shared board · signed in as ' + user : 'Not connected · saved in this browser only',
+      modeColor: syncError ? '#a3391c' : '#6b625a',
+      footNote: on ? 'Changes save automatically and appear for everyone on the team. “Export to Excel” downloads a copy.' : 'Saved automatically in this browser. “Export to Excel” downloads a file that opens in Excel or Google Sheets.'
+    };
+  }
+  save(patch) {
+    const prev = this.state.items;
+    this.setState(patch, () => {
+      const {items,teamText,view,hideDone} = this.state;
+      if (!this.db) { localStorage.setItem(KEY, JSON.stringify({items,teamText,view,hideDone})); return; }
+      if (patch.items) this.syncItems(prev, items);
+      if ('teamText' in patch) this.queue('team', () => this.send('team', this.db.from('settings').upsert({key:'team', value:this.state.teamText})));
+    });
+  }
+  upd(id, k, v) { this.save({items: this.state.items.map(i => i.id===id ? {...i,[k]:v} : i)}); }
+  updSteps(id, fn) { this.save({items: this.state.items.map(i => i.id===id ? {...i,steps:fn(i.steps||[])} : i)}); }
+  mark(e, id, on) {
+    e.preventDefault();
+    const box = e.currentTarget.parentElement.parentElement.querySelector('[data-notes]'), sel = window.getSelection();
+    if (!box || !sel.rangeCount || sel.isCollapsed || !box.contains(sel.anchorNode)) return;
+    const c = on ? '#ffe27a' : 'transparent';
+    document.execCommand('styleWithCSS', false, true);
+    document.execCommand('hiliteColor', false, c) || document.execCommand('backColor', false, c);
+    this.upd(id, 'next', box.innerHTML);
+  }
+  add(cat) { this.save({items:[...this.state.items,{id:uid(),category:cat||CATS[0],title:'',owner:this.state.person||'',deadline:'',status:'To do',priority:'Medium',next:''}]}); }
+  exportCsv() {
+    const rows = [['Category','Topic','Owner','Deadline','Status','Priority','Next step / notes','Sub-steps']];
+    CATS.forEach(c => this.state.items.filter(i=>i.category===c).forEach(i => rows.push([i.category,i.title,i.owner,i.deadline,i.status,i.priority,toText(i.next),(i.steps||[]).map(s=>(s.done?'[x] ':'[ ] ')+s.text).join('\n')])));
+    const blob = new Blob(['\ufeff'+rows.map(r=>r.map(csvCell).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `strategy-tracker-${iso(new Date())}.csv`; a.click();
+  }
+  renderVals() {
+    const {items,teamText,view,person,hideDone} = this.state;
+    const team = teamText.split(',').map(s=>s.trim()).filter(Boolean);
+    const today = iso(new Date()), week = addDays(7);
+    const dayDiff = d => Math.round((new Date(d) - new Date(today))/864e5);
+    const open = items.filter(i=>i.status!=='Done');
+    const overdueN = open.filter(i=>i.deadline && i.deadline<today).length;
+    const decorate = i => {
+      const done = i.status==='Done', od = !done && i.deadline && i.deadline<today;
+      const n = i.deadline ? dayDiff(i.deadline) : null;
+      const [l,c,h,fg] = STATUS[i.status] || STATUS['To do'];
+      const steps = i.steps||[], sd = steps.filter(s=>s.done).length;
+      const setSteps = fn => this.updSteps(i.id, fn);
+      return {...i,
+        rowBg: od ? '#fdf3ef' : (done ? '#faf8f5' : '#fff'),
+        strike: done ? 'line-through' : 'none',
+        dateBorder: od ? '#d9876a' : '#e6e0d8', dateColor: od ? '#a3391c' : '#6b625a',
+        dueLabel: done || n===null ? '' : n<0 ? `${-n}d overdue` : n===0 ? 'Due today' : `in ${n}d`,
+        statusBg:`oklch(${l} ${c} ${h})`, statusFg:fg,
+        prioColor: i.priority==='High' ? '#a3391c' : i.priority==='Low' ? '#8a8077' : '#2b2622',
+        setTitle:e=>this.upd(i.id,'title',e.target.value), setCategory:e=>this.upd(i.id,'category',e.target.value),
+        setOwner:e=>this.upd(i.id,'owner',e.target.value), setDeadline:e=>this.upd(i.id,'deadline',e.target.value),
+        setStatus:e=>this.upd(i.id,'status',e.target.value), setPriority:e=>this.upd(i.id,'priority',e.target.value),
+        stepsDisplay: steps.length ? 'flex' : 'none',
+        stepsLabel: steps.length ? `${sd}/${steps.length} done` : '',
+        stepList: steps.map(s => ({...s, strike:s.done?'line-through':'none', color:s.done?'#6b625a':'#2b2622',
+          toggle:()=>setSteps(a=>a.map(x=>x.id===s.id?{...x,done:!x.done}:x)),
+          setText:e=>{ const v=e.target.value; setSteps(a=>a.map(x=>x.id===s.id?{...x,text:v}:x)); },
+          remove:()=>setSteps(a=>a.filter(x=>x.id!==s.id))})),
+        addStep:()=>setSteps(a=>[...a,{id:uid(),text:'',done:false}]),
+        notesEl: React.createElement('div',{key:i.id,'data-notes':'','data-ph':'Next step / notes…',contentEditable:true,suppressContentEditableWarning:true,
+          dangerouslySetInnerHTML:{__html:i.next||''},style:NOTE_STYLE,
+          onFocus:()=>{ this.editing = i.id; },
+          onBlur:e=>{ this.editing = null; const v=e.currentTarget.innerHTML; if (v!==(i.next||'')) this.upd(i.id,'next',v); },
+          onPaste:e=>{ e.preventDefault(); document.execCommand('insertText',false,e.clipboardData.getData('text/plain')); }}),
+        hlOn:e=>this.mark(e,i.id,true), hlOff:e=>this.mark(e,i.id,false),
+        remove:()=>{ if (window.confirm('Delete "' + (i.title || 'this task') + '"?')) this.save({items:this.state.items.filter(x=>x.id!==i.id)}); }
+      };
+    };
+    let vis = items.filter(i => (!person || i.owner===person) && (!hideDone || i.status!=='Done'));
+    const byDate = (a,b) => (a.status==='Done')-(b.status==='Done') || (a.deadline||'9999').localeCompare(b.deadline||'9999');
+    const groups = view==='cat'
+      ? CATS.map((c,k) => { const its = vis.filter(i=>i.category===c).sort(byDate).map(decorate);
+          return {name:c,color:`oklch(0.68 0.12 ${HUES[k]})`,count:its.length,items:its,empty:its.length===0,add:()=>this.add(c)}; })
+      : [{name:'All items — soonest deadline first',color:'#2b2622',count:vis.length,items:[...vis].sort(byDate).map(decorate),empty:vis.length===0,add:()=>this.add()}];
+    return {
+      todayLabel: new Date().toLocaleDateString(undefined,{weekday:'long',day:'numeric',month:'long',year:'numeric'}),
+      stats:{active:open.length,overdue:overdueN,overdueColor:overdueN?'#a3391c':'#2b2622',
+        week:open.filter(i=>i.deadline && i.deadline>=today && i.deadline<=week).length,done:items.length-open.length},
+      ...this.gate(),
+      categories:CATS, team, teamText, groups, personFilter:person, hideDone,
+      viewCatBg: view==='cat'?'#fff':'transparent', viewDateBg: view==='date'?'#fff':'transparent',
+      setViewCat:()=>this.save({view:'cat'}), setViewDate:()=>this.save({view:'date'}),
+      onPerson:e=>this.setState({person:e.target.value}),
+      toggleDone:()=>this.save({hideDone:!hideDone}),
+      onTeam:e=>this.save({teamText:e.target.value}),
+      doPrint:()=>window.print(), exportCsv:()=>this.exportCsv()
+    };
+  }
+}
+</script>
+</body>
+</html>
