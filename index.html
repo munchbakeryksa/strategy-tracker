@@ -41,7 +41,7 @@ input,select,button{font-family:inherit;font-size:14px;color:inherit}
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <div style="display:flex;flex-direction:column;gap:2px;padding:10px 16px;background:#fff;border:1px solid #e6e0d8;border-radius:8px;min-width:84px">
-        <span style="font-size:22px;font-weight:600">{{ stats.active }}<span style="font-size:14px;color:#8a8077;font-weight:400"> / 10</span></span>
+        <span style="font-size:22px;font-weight:600">{{ stats.active }}</span>
         <span style="font-size:12px;color:#6b625a">Active</span>
       </div>
       <div style="display:flex;flex-direction:column;gap:2px;padding:10px 16px;background:#fff;border:1px solid #e6e0d8;border-radius:8px;min-width:84px">
@@ -63,6 +63,7 @@ input,select,button{font-family:inherit;font-size:14px;color:inherit}
     <div style="display:flex;background:#f1ece5;border-radius:7px;padding:3px;gap:2px">
       <button onClick="{{ setViewCat }}" style="border:0;padding:7px 12px;border-radius:5px;cursor:pointer;background:{{ viewCatBg }};font-weight:500">By category</button>
       <button onClick="{{ setViewDate }}" style="border:0;padding:7px 12px;border-radius:5px;cursor:pointer;background:{{ viewDateBg }};font-weight:500">By deadline</button>
+      <button onClick="{{ setViewCal }}" style="border:0;padding:7px 12px;border-radius:5px;cursor:pointer;background:{{ viewCalBg }};font-weight:500">Calendar</button>
     </div>
     <select value="{{ personFilter }}" onChange="{{ onPerson }}" style="padding:7px 10px;border:1px solid #ddd5cb;border-radius:6px;background:#fff">
       <option value="">Everyone</option>
@@ -80,8 +81,150 @@ input,select,button{font-family:inherit;font-size:14px;color:inherit}
     </div>
   </div>
 
-  <sc-for list="{{ groups }}" as="g" hint-placeholder-count="3">
+  <sc-if value="{{ calOn }}" hint-placeholder-val="{{ false }}">
     <section style="display:flex;flex-direction:column;background:#fff;border:1px solid #e6e0d8;border-radius:10px;overflow:hidden">
+      <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;border-bottom:1px solid #eee8e0;background:#fbf9f6">
+        <div style="display:flex;flex-direction:column;gap:2px;min-width:0">
+          <h2 style="margin:0;font-size:16px;font-weight:600">{{ calHeading }}</h2>
+          <span style="font-size:12px;color:#6b625a">{{ calSub }}</span>
+        </div>
+        <div class="noprint" style="display:flex;flex-wrap:wrap;align-items:center;gap:10px">
+          <div style="display:{{ calNavDisplay }};align-items:center;gap:6px">
+            <button onClick="{{ calPrev }}" aria-label="Previous month" style="width:32px;height:32px;padding:0;border:1px solid #ddd5cb;border-radius:6px;background:#fff;cursor:pointer;font-size:16px;line-height:1">‹</button>
+            <button onClick="{{ calNext }}" aria-label="Next month" style="width:32px;height:32px;padding:0;border:1px solid #ddd5cb;border-radius:6px;background:#fff;cursor:pointer;font-size:16px;line-height:1">›</button>
+            <button onClick="{{ calToday }}" style="height:32px;padding:0 12px;border:1px solid #ddd5cb;border-radius:6px;background:#fff;cursor:pointer">Today</button>
+          </div>
+          <button onClick="{{ calAddEvent }}" style="display:{{ calAddDisplay }};height:32px;padding:0 12px;border:1px solid #ddd5cb;border-radius:6px;background:#fff;cursor:pointer">+ Add event</button>
+          <div style="display:flex;background:#f1ece5;border-radius:7px;padding:3px;gap:2px">
+            <button onClick="{{ calSetYear }}" aria-pressed="{{ calYear }}" style="border:0;padding:6px 12px;border-radius:5px;cursor:pointer;background:{{ calYearBg }};font-weight:500">Year plan</button>
+            <button onClick="{{ calSetMonth }}" aria-pressed="{{ calMonthOn }}" style="border:0;padding:6px 12px;border-radius:5px;cursor:pointer;background:{{ calMonthBg }};font-weight:500">Month</button>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px 16px;padding:10px 16px;border-bottom:1px solid #eee8e0">
+        <sc-for list="{{ calLegend }}" as="l" hint-placeholder-count="8">
+          <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:#6b625a"><span aria-hidden="true" style="box-sizing:border-box;width:10px;height:10px;border-radius:2px;background:{{ l.color }};border:1px solid {{ l.border }}"></span>{{ l.name }}</span>
+        </sc-for>
+      </div>
+      <sc-if value="{{ calYear }}" hint-placeholder-val="{{ false }}">
+        <div style="overflow-x:auto">
+          <div style="min-width:1100px">
+            <div style="display:grid;grid-template-columns:240px minmax(0,1fr);border-bottom:1px solid #eee8e0">
+              <div style="display:flex;align-items:flex-end;padding:8px 16px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#6b625a">Event</div>
+              <div style="display:flex;flex-direction:column;min-width:0">
+                <div style="display:flex">
+                  <sc-for list="{{ calYears }}" as="y" hint-placeholder-count="2">
+                    <div style="flex:none;box-sizing:border-box;width:{{ y.w }};overflow:hidden;padding:5px 8px 3px;border-left:1px solid #eee8e0;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:500">{{ y.label }}</div>
+                  </sc-for>
+                </div>
+                <div style="display:flex">
+                  <sc-for list="{{ calMonths }}" as="m" hint-placeholder-count="12">
+                    <button onClick="{{ m.go }}" title="Open this month" style="flex:none;box-sizing:border-box;width:{{ m.w }};overflow:hidden;padding:4px 0 6px;border:0;border-left:1px solid #eee8e0;background:transparent;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#6b625a" style-hover="background:#f1ece5;color:#2b2622">{{ m.label }}</button>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+            <div style="position:relative">
+              <div aria-hidden="true" style="position:absolute;top:0;bottom:0;left:240px;right:0;pointer-events:none">
+                <sc-for list="{{ calLines }}" as="l" hint-placeholder-count="12">
+                  <div style="position:absolute;top:0;bottom:0;left:{{ l.left }};width:{{ l.w }};background:{{ l.color }}"></div>
+                </sc-for>
+              </div>
+              <div style="display:grid;grid-template-columns:240px minmax(0,1fr);align-items:center">
+                <div style="display:flex;flex-direction:column;gap:1px;padding:8px 16px">
+                  <span style="font-size:14px;font-weight:500">Tracker tasks</span>
+                  <span style="font-size:12px;color:#6b625a">{{ calTaskNote }}</span>
+                </div>
+                <div style="position:relative;height:36px;overflow:hidden">
+                  <sc-for list="{{ calDots }}" as="d">
+                    <button onClick="{{ d.pick }}" title="{{ d.tip }}" aria-label="{{ d.tip }}" style="position:absolute;top:10px;left:{{ d.left }};box-sizing:border-box;width:16px;height:16px;margin-left:-8px;padding:0;border:2px solid #fff;border-radius:50%;background:{{ d.color }};cursor:pointer"></button>
+                  </sc-for>
+                </div>
+              </div>
+              <sc-for list="{{ calRows }}" as="e" hint-placeholder-count="6">
+                <div style="border-top:1px solid #f1ece5;background:{{ e.rowBg }}">
+                  <div style="display:grid;grid-template-columns:240px minmax(0,1fr);align-items:center">
+                    <button onClick="{{ e.toggle }}" aria-expanded="{{ e.open }}" title="Show stage dates and edit this event" style="display:flex;flex-direction:column;gap:1px;box-sizing:border-box;width:100%;min-width:0;padding:8px 16px;border:0;background:transparent;cursor:pointer;text-align:left" style-hover="background:#f6f3ee">
+                      <span style="display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:0 8px;width:100%">
+                        <span style="font-size:14px;font-weight:500">{{ e.name }}</span>
+                        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px">{{ e.dateLabel }}</span>
+                      </span>
+                      <span style="font-size:12px;color:{{ e.statusColor }}">{{ e.status }}</span>
+                    </button>
+                    <div style="position:relative;height:36px;overflow:hidden">
+                      <sc-for list="{{ e.bars }}" as="b">
+                        <div title="{{ b.tip }}" style="position:absolute;top:{{ b.top }};height:{{ b.h }};left:{{ b.left }};width:{{ b.width }};min-width:{{ b.minW }};margin-left:{{ b.ml }};background:{{ b.color }};border-radius:{{ b.radius }}"></div>
+                      </sc-for>
+                    </div>
+                  </div>
+                  <sc-if value="{{ e.open }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;flex-direction:column;padding-bottom:6px">
+                      <sc-for list="{{ e.stages }}" as="s">
+                        <div style="display:grid;grid-template-columns:240px minmax(0,1fr);align-items:center">
+                          <div style="display:flex;flex-direction:column;min-width:0;padding:4px 16px 4px 28px">
+                            <span style="display:flex;align-items:center;gap:6px;font-size:13px"><span aria-hidden="true" style="flex:none;width:8px;height:8px;border-radius:2px;background:{{ s.color }}"></span>{{ s.name }}</span>
+                            <span style="padding-left:14px;font-size:12px;color:{{ s.metaColor }}">{{ s.meta }}</span>
+                          </div>
+                          <div style="position:relative;height:26px;overflow:hidden">
+                            <div style="position:absolute;top:8px;height:10px;left:{{ s.left }};width:{{ s.width }};min-width:3px;margin-left:{{ s.ml }};background:{{ s.color }};border-radius:{{ s.radius }}"></div>
+                          </div>
+                        </div>
+                      </sc-for>
+                      <div class="noprint" style="display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding:10px 16px 8px 28px">
+                        <label style="display:flex;align-items:center;gap:6px;font-size:13px"><span style="color:#6b625a">Name</span><input value="{{ e.name }}" onChange="{{ e.setName }}" style="width:200px;padding:6px 8px;border:1px solid #ddd5cb;border-radius:5px;background:#fff;font-size:13px"></label>
+                        <label style="display:flex;align-items:center;gap:6px;font-size:13px"><span style="color:#6b625a">Event date</span><input type="date" value="{{ e.draftDate }}" onChange="{{ e.setDraftDate }}" style="height:32px;box-sizing:border-box;padding:0 6px;border:1px solid #ddd5cb;border-radius:5px;background:#fff;font-size:13px"></label>
+                        <label style="display:flex;align-items:center;gap:6px;font-size:13px"><span style="color:#6b625a">Ends (for a season)</span><input type="date" value="{{ e.draftEnd }}" onChange="{{ e.setDraftEnd }}" style="height:32px;box-sizing:border-box;padding:0 6px;border:1px solid #ddd5cb;border-radius:5px;background:#fff;font-size:13px"></label>
+                        <button onClick="{{ e.apply }}" style="height:32px;padding:0 12px;border:0;border-radius:5px;background:#2b2622;color:#fff;font-size:13px;font-weight:500;cursor:pointer">Update dates</button>
+                        <button onClick="{{ e.remove }}" style="height:32px;margin-left:auto;padding:0 12px;border:1px solid #e6e0d8;border-radius:5px;background:#fff;color:#a3391c;font-size:13px;cursor:pointer">Remove event</button>
+                      </div>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <sc-if value="{{ calEmpty }}" hint-placeholder-val="{{ false }}">
+                <div style="padding:14px 16px;border-top:1px solid #f1ece5;font-size:13px;color:#6b625a">No events yet. Use “+ Add event”.</div>
+              </sc-if>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ calMonthOn }}" hint-placeholder-val="{{ false }}">
+        <div style="overflow-x:auto">
+          <div style="min-width:980px">
+            <div style="display:grid;grid-template-columns:repeat(7, minmax(0, 1fr));border-bottom:1px solid #eee8e0">
+              <sc-for list="{{ calDow }}" as="w" hint-placeholder-count="7">
+                <div style="padding:8px 10px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#6b625a">{{ w }}</div>
+              </sc-for>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(7, minmax(0, 1fr))">
+              <sc-for list="{{ calDays }}" as="d" hint-placeholder-count="35">
+                <div style="display:flex;flex-direction:column;gap:4px;min-width:0;min-height:116px;padding:6px;border-right:1px solid #f1ece5;border-bottom:1px solid #f1ece5;background:{{ d.bg }}">
+                  <div style="display:flex;align-items:center;justify-content:space-between">
+                    <span style="min-width:22px;box-sizing:border-box;padding:1px 6px;border-radius:999px;text-align:center;font-size:13px;font-weight:500;color:{{ d.numColor }};background:{{ d.numBg }}">{{ d.num }}</span>
+                    <button class="noprint" onClick="{{ d.add }}" title="{{ d.addLabel }}" aria-label="{{ d.addLabel }}" style="width:24px;height:24px;padding:0;border:0;border-radius:5px;background:transparent;color:#6b625a;cursor:pointer;font-size:16px;line-height:1" style-hover="background:#f1ece5;color:#a4532e">+</button>
+                  </div>
+                  <sc-for list="{{ d.chips }}" as="c">
+                    <button onClick="{{ c.pick }}" title="{{ c.tip }}" style="display:block;box-sizing:border-box;width:100%;padding:3px 6px 3px 9px;border:1px solid {{ c.border }};border-radius:4px;box-shadow:inset 3px 0 0 {{ c.accent }};background:{{ c.bg }};color:{{ c.fg }};font-size:12px;line-height:1.3;text-align:left;text-decoration:{{ c.strike }};overflow-wrap:anywhere;cursor:pointer">{{ c.label }}</button>
+                  </sc-for>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+        <sc-if value="{{ calUndatedOn }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:10px 16px;border-top:1px solid #eee8e0">
+            <span style="font-size:12px;color:#6b625a">{{ calUndatedLabel }}</span>
+            <sc-for list="{{ calUndated }}" as="c">
+              <button onClick="{{ c.pick }}" title="{{ c.tip }}" style="padding:3px 8px 3px 10px;border:1px solid {{ c.border }};border-radius:4px;box-shadow:inset 3px 0 0 {{ c.accent }};background:{{ c.bg }};color:{{ c.fg }};font-size:12px;line-height:1.3;text-align:left;text-decoration:{{ c.strike }};cursor:pointer">{{ c.label }}</button>
+            </sc-for>
+          </div>
+        </sc-if>
+      </sc-if>
+      <div style="padding:10px 16px;border-top:1px solid #eee8e0;font-size:12px;line-height:1.5;color:#6b625a">{{ calNote }}</div>
+    </section>
+  </sc-if>
+  <sc-for list="{{ groups }}" as="g" hint-placeholder-count="3">
+    <section id="{{ g.domId }}" style="display:flex;flex-direction:column;background:#fff;border:1px solid #e6e0d8;border-radius:10px;overflow:hidden">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;border-bottom:1px solid #eee8e0;background:#fbf9f6">
         <div style="display:flex;align-items:center;gap:10px">
           <span style="width:10px;height:10px;border-radius:50%;background:{{ g.color }}"></span>
@@ -91,12 +234,12 @@ input,select,button{font-family:inherit;font-size:14px;color:inherit}
         <button class="noprint" onClick="{{ g.add }}" style="border:0;background:transparent;color:#a4532e;cursor:pointer;font-weight:500;padding:4px 6px">+ Add item</button>
       </div>
       <div style="overflow-x:auto">
-        <div style="min-width:1280px">
-          <div style="display:grid;grid-template-columns:minmax(220px,2fr) 140px 130px 140px 130px 100px minmax(340px,3fr);gap:8px;padding:8px 16px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#8a8077">
+        <div style="min-width:1300px">
+          <div style="display:grid;grid-template-columns:minmax(220px,2fr) 140px 150px 140px 130px 100px minmax(340px,3fr);gap:8px;padding:8px 16px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#8a8077">
             <span>Topic</span><span>Category</span><span>Owner</span><span>Deadline</span><span>Status</span><span>Priority</span><span>Next step / notes</span>
           </div>
           <sc-for list="{{ g.items }}" as="it">
-            <div style="display:grid;grid-template-columns:minmax(220px,2fr) 140px 130px 140px 130px 100px minmax(340px,3fr);gap:8px;padding:10px 16px;align-items:start;border-top:1px solid #f1ece5;background:{{ it.rowBg }}">
+            <div style="display:grid;grid-template-columns:minmax(220px,2fr) 140px 150px 140px 130px 100px minmax(340px,3fr);gap:8px;padding:10px 16px;align-items:start;border-top:1px solid #f1ece5;background:{{ it.rowBg }}">
               <div style="display:flex;flex-direction:column;gap:2px;min-width:0">
                 <div style="display:flex;align-items:center;gap:6px;min-width:0">
                   <button class="noprint" onClick="{{ it.remove }}" title="Delete task" aria-label="Delete task" style="flex:none;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid #e6e0d8;border-radius:5px;background:#fff;color:#a3391c;cursor:pointer;font-size:16px;line-height:1;padding:0" style-hover="background:#a3391c;color:#fff;border-color:#a3391c">×</button>
@@ -111,10 +254,20 @@ input,select,button{font-family:inherit;font-size:14px;color:inherit}
               <select value="{{ it.category }}" onChange="{{ it.setCategory }}" style="height:32px;box-sizing:border-box;padding:0 6px;border:1px solid #e6e0d8;border-radius:5px;background:#fff;font-size:13px">
                 <sc-for list="{{ categories }}" as="c"><option value="{{ c }}">{{ c }}</option></sc-for>
               </select>
-              <select value="{{ it.owner }}" onChange="{{ it.setOwner }}" style="height:32px;box-sizing:border-box;padding:0 6px;border:1px solid #e6e0d8;border-radius:5px;background:#fff;font-size:13px">
-                <option value="">Unassigned</option>
-                <sc-for list="{{ team }}" as="p"><option value="{{ p }}">{{ p }}</option></sc-for>
-              </select>
+              <div style="display:flex;flex-direction:column;gap:4px;min-width:0">
+                <button onClick="{{ it.toggleOwners }}" title="{{ it.ownerLabel }}" style="height:32px;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:4px;padding:0 8px;border:1px solid #e6e0d8;border-radius:5px;background:#fff;font-size:13px;color:{{ it.ownerColor }};cursor:pointer;text-align:left;min-width:0">
+                  <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0">{{ it.ownerLabel }}</span>
+                  <span style="flex:none;font-size:10px;color:#6b625a">▾</span>
+                </button>
+                <div class="noprint" style="display:{{ it.ownerOpenDisplay }};flex-direction:column;gap:2px;padding:6px 8px;border:1px solid #e6e0d8;border-radius:5px;background:#fff">
+                  <sc-for list="{{ it.ownerOpts }}" as="o">
+                    <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;padding:2px 0">
+                      <input type="checkbox" checked="{{ o.on }}" onChange="{{ o.toggle }}" style="margin:0;accent-color:#2b2622">
+                      <span>{{ o.name }}</span>
+                    </label>
+                  </sc-for>
+                </div>
+              </div>
               <div style="position:relative;display:flex;flex-direction:column">
                 <input type="date" value="{{ it.deadline }}" onChange="{{ it.setDeadline }}" style="height:32px;box-sizing:border-box;padding:0 6px;border:1px solid {{ it.dateBorder }};border-radius:5px;background:#fff;font-size:13px;color:{{ it.dateColor }}">
                 <span style="position:absolute;top:100%;left:0;margin-top:2px;white-space:nowrap;font-size:11px;color:{{ it.dateColor }};font-weight:500">{{ it.dueLabel }}</span>
@@ -175,6 +328,49 @@ const clean = h => { const b = new DOMParser().parseFromString(String(h||''),'te
     const bg = n.style.backgroundColor; [...n.attributes].forEach(a => n.removeAttribute(a.name)); if (bg) n.style.backgroundColor = bg; });
   return b.innerHTML; };
 const fromRow = r => ({id:r.id, category:r.category, title:r.title||'', owner:r.owner||'', deadline:r.deadline||'', status:r.status, priority:r.priority, next:clean(r.notes), steps:Array.isArray(r.steps)?r.steps:[]});
+const owners = s => String(s||'').split(',').map(x => x.trim()).filter(Boolean);
+const DAY = 864e5;
+const T = s => Date.UTC(+s.slice(0,4), +s.slice(5,7)-1, +s.slice(8,10));
+const shift = (s,n) => new Date(T(s)+n*DAY).toISOString().slice(0,10);
+const gap = (a,b) => Math.round((T(a)-T(b))/DAY);
+const addMonth = (s,n) => { const d = new Date(T(s)); d.setUTCMonth(d.getUTCMonth()+n); return d.toISOString().slice(0,10); };
+const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'], WDAY = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const wday = s => new Date(T(s)).getUTCDay();
+const dm = s => +s.slice(8) + ' ' + MON[+s.slice(5,7)-1];
+const okDate = s => /^\d{4}-\d{2}-\d{2}$/.test(s||'') && s >= '2025-01-01' && s <= '2032-12-31';
+// Work-back cadence. from / to = days before the event date.
+const STAGES = [
+  {k:'cake', name:'Cake design', from:75, to:60, owner:'Nahla', color:'#a4532e', tint:'#f6e4da', chips:[['start','start cake design'],['finish','cake design ready']]},
+  {k:'box', name:'Box design', from:60, to:53, owner:'Waad', color:'#b87a12', tint:'#f8ecd2', chips:[['finish','box design ready']]},
+  {k:'print', name:'Box printing', from:53, to:32, owner:'Javed', color:'#3d5a80', tint:'#dfe7f1', chips:[['finish','boxes printed']]},
+  {k:'shoot', name:'Photo shoot', from:30, to:30, owner:'Nahla, Waad', color:'#7a4e8f', tint:'#ecdff1', chips:[['start','photo shoot']]},
+  {k:'art', name:'Artwork: banner, ads, posts', from:30, to:21, owner:'Nahla, Waad', color:'#2f8f88', tint:'#d9efed', chips:[['finish','all artwork ready']]},
+  {k:'live', name:'Media live', from:14, to:0, owner:'Nahla, Waad', color:'#2f7d4f', tint:'#dcefe2', chips:[['start','media live, influencers start']]},
+  {k:'infl', name:'Influencer hand-outs', from:14, to:0, owner:'Nahla', color:'#71892a', tint:'#eaf0d4', chips:[]}
+];
+// 2027 events. moon:true = expected date (Umm al-Qura) that moon sighting can move by a day.
+const EVENTS27 = [
+  {id:'newyear27', name:'New Year 2027', date:'2026-12-31'},
+  {id:'ramadan', name:'Ramadan', date:'2027-02-08', end:'2027-03-08', moon:true},
+  {id:'valentine', name:'Valentine’s Day', date:'2027-02-14'},
+  {id:'founding', name:'Founding Day', date:'2027-02-22'},
+  {id:'womens', name:'Women’s Day', date:'2027-03-08'},
+  {id:'fitr', name:'Eid Al Fitr', date:'2027-03-09', moon:true},
+  {id:'mothers', name:'Mother’s Day', date:'2027-03-21'},
+  {id:'adha', name:'Eid Al Adha', date:'2027-05-16', moon:true},
+  {id:'grad', name:'Graduation Season', date:'2027-06-01', end:'2027-07-07'},
+  {id:'fathers', name:'Father’s Day', date:'2027-06-21'},
+  {id:'friendship', name:'Friendship Day', date:'2027-07-30'},
+  {id:'school', name:'Back to School', date:'2027-08-18', end:'2027-08-31'},
+  {id:'national', name:'National Day', date:'2027-09-23'},
+  {id:'halloween', name:'Halloween (Spooky Season)', date:'2027-10-01', end:'2027-10-31'},
+  {id:'pink', name:'Pink Month', date:'2027-10-01', end:'2027-10-31'},
+  {id:'teachers', name:'Teachers Day', date:'2027-10-05'},
+  {id:'manager', name:'Manager Day', date:'2027-10-16'},
+  {id:'gradeoy', name:'Graduation Season (EOY)', date:'2027-12-01', end:'2028-01-07'},
+  {id:'newyear', name:'New Year 2028', date:'2027-12-31'}
+];
+const CAL_OFF = {calOn:false, calYear:false, calMonthOn:false, calEmpty:false, calUndatedOn:false, calLegend:[], calYears:[], calMonths:[], calLines:[], calRows:[], calDots:[], calDow:[], calDays:[], calUndated:[]};
 const csvCell = v => '"' + String(v ?? '').replace(/"/g,'""') + '"';
 
 class Component extends DCLogic {
@@ -205,18 +401,20 @@ class Component extends DCLogic {
     if (!email) { this.userEmail = ''; this.setState({mode:'signin', user:'', loaded:false}); return; }
     if (this.userEmail === email) return;
     this.userEmail = email;
-    this.setState({mode:'online', user:email, items:[], loaded:false, syncError:''}, () => { this.pull(); this.listen(); });
+    this.setState({mode:'online', user:email, items:[], events:null, loaded:false, syncError:''}, () => { this.pull(); this.listen(); });
   }
   async pull() {
     if (!this.db || !this.userEmail) return;
-    const [a, b] = await Promise.all([this.db.from('items').select('*').order('created_at'), this.db.from('settings').select('*').eq('key','team').maybeSingle()]);
+    const [a, b] = await Promise.all([this.db.from('items').select('*').order('created_at'), this.db.from('settings').select('*')]);
     if (a.error) { this.setState({loaded:true, syncError:a.error.message}); return; }
     const busy = id => this.pending.has(id) || this.editing === id;
     const local = new Map(this.state.items.map(i => [i.id, i]));
     const items = a.data.filter(r => !this.gone.has(r.id)).map(r => busy(r.id) && local.has(r.id) ? local.get(r.id) : fromRow(r));
     this.state.items.forEach(i => { if (this.pending.has(i.id) && !items.some(x => x.id === i.id)) items.push(i); });
     const patch = {items, loaded:true};
-    if (b.data && !this.pending.has('team')) patch.teamText = b.data.value || '';
+    const st = k => (b.data || []).find(r => r.key === k);
+    if (st('team') && !this.pending.has('team')) patch.teamText = st('team').value || '';
+    if (st('cal27') && !this.pending.has('cal27')) { try { const ev = JSON.parse(st('cal27').value); if (Array.isArray(ev)) patch.events = ev; } catch (e) {} }
     this.setState(patch);
   }
   listen() {
@@ -278,9 +476,10 @@ class Component extends DCLogic {
     const prev = this.state.items;
     this.setState(patch, () => {
       const {items,teamText,view,hideDone} = this.state;
-      if (!this.db) { localStorage.setItem(KEY, JSON.stringify({items,teamText,view,hideDone})); return; }
+      if (!this.db) { localStorage.setItem(KEY, JSON.stringify({items,teamText,view,hideDone,events:this.state.events||null})); return; }
       if (patch.items) this.syncItems(prev, items);
       if ('teamText' in patch) this.queue('team', () => this.send('team', this.db.from('settings').upsert({key:'team', value:this.state.teamText})));
+      if ('events' in patch) this.queue('cal27', () => this.send('cal27', this.db.from('settings').upsert({key:'cal27', value:JSON.stringify(this.state.events||[])})));
     });
   }
   upd(id, k, v) { this.save({items: this.state.items.map(i => i.id===id ? {...i,[k]:v} : i)}); }
@@ -293,6 +492,89 @@ class Component extends DCLogic {
     document.execCommand('styleWithCSS', false, true);
     document.execCommand('hiliteColor', false, c) || document.execCommand('backColor', false, c);
     this.upd(id, 'next', box.innerHTML);
+  }
+  pickTask(id) { const on = this.state.calSel === id; this.setState({calSel: on ? null : id}); if (!on) this.reveal(); }
+  reveal() { setTimeout(() => { const el = document.getElementById('cal-selected'); if (el) el.scrollIntoView({block:'nearest', behavior:'smooth'}); }, 80); }
+  addOn(date) { const id = uid(); this.save({calSel:id, items:[...this.state.items,{id,category:CATS[0],title:'',owner:this.state.person||'',deadline:date,status:'To do',priority:'Medium',next:''}]}); this.reveal(); }
+  calVals(vis, today) {
+    const {person, calOpen, calSel} = this.state, mode = this.state.calMode === 'month' ? 'month' : 'year';
+    const all = Array.isArray(this.state.events) ? this.state.events : EVENTS27;
+    const evs = all.filter(e => e && okDate(e.date)).sort((a,b) => a.date.localeCompare(b.date));
+    const plan = e => { const end = okDate(e.end) && e.end > e.date ? e.end : e.date;
+      return {end, range:end !== e.date, stages:STAGES.map(s => ({...s, dot:s.from === s.to, start:shift(e.date,-s.from), finish:shift(e.date,-s.to)}))}; };
+    const upd = (id, patch) => this.save({events:all.map(e => e.id === id ? {...e, ...patch} : e)});
+    const openEv = e => ({calOpen:e.id, calDraft:{date:e.date, end:okDate(e.end) ? e.end : ''}});
+    const catColor = c => { const k = CATS.indexOf(c); return k < 0 ? '#6b625a' : `oklch(0.55 0.13 ${HUES[k]})`; };
+    const late = i => okDate(i.deadline) && i.status !== 'Done' && i.deadline < today;
+    const dated = vis.filter(i => okDate(i.deadline)), undated = vis.filter(i => !okDate(i.deadline));
+    const taskChip = i => ({label:i.title || 'Untitled task', tip:[i.category, i.owner || 'Unassigned', i.status].join(' · '),
+      bg:calSel === i.id ? '#f1ece5' : '#fff', fg:late(i) ? '#a3391c' : '#2b2622', border:calSel === i.id ? '#2b2622' : late(i) ? '#d9876a' : '#ddd5cb',
+      accent:catColor(i.category), strike:i.status === 'Done' ? 'line-through' : 'none', pick:() => this.pickTask(i.id)});
+    const base = {...CAL_OFF, calOn:true, calYear:mode === 'year', calMonthOn:mode === 'month',
+      calYearBg:mode === 'year' ? '#fff' : 'transparent', calMonthBg:mode === 'month' ? '#fff' : 'transparent',
+      calSetYear:() => this.setState({calMode:'year'}), calSetMonth:() => this.setState({calMode:'month'}),
+      calNavDisplay:mode === 'month' ? 'flex' : 'none', calAddDisplay:mode === 'year' ? 'inline-block' : 'none',
+      calAddEvent:() => { const e = {id:uid(), name:'New event', date:shift(today,75)}; this.save({events:[...all, e], ...openEv(e)}); },
+      calLegend:[...STAGES.filter(s => s.k !== 'infl').map(s => ({name:s.k === 'live' ? 'Media Live + influencers' : s.k === 'art' ? 'Artwork' : s.name, color:s.color, border:s.color})),
+        {name:'Event', color:'#2b2622', border:'#2b2622'}, {name:'Tracker task', color:'#fff', border:'#6b625a'}, {name:'Today', color:'#a3391c', border:'#a3391c'}],
+      calNote:'Cadence, counted back from the event date: cake design starts 75 days before and is ready 60 days before; box design takes 1 week; box printing 3 weeks; photo shoot 30 days before; all artwork ready 21 days before; media goes live and influencer hand-outs start 14 days before. ≈ marks an expected date (Umm al-Qura calendar) that moon sighting can move by a day: update the event date and every stage moves with it.'};
+    if (mode === 'year') {
+      const lo = evs.length ? evs.map(e => shift(e.date,-STAGES[0].from)).sort()[0] : today;
+      const hi = evs.length ? evs.map(e => plan(e).end).sort().pop() : today;
+      const w0 = lo.slice(0,8) + '01', w1 = addMonth(hi.slice(0,8) + '01', 1), total = gap(w1,w0);
+      const pct = d => (gap(d,w0) / total * 100).toFixed(3) + '%', wid = (a,b) => (Math.max(gap(b,a),0) / total * 100).toFixed(3) + '%';
+      const months = [], years = [], lines = [];
+      for (let d = w0; d < w1; d = addMonth(d,1)) { const ym = d.slice(0,7), days = gap(addMonth(d,1), d);
+        months.push({label:MON[+d.slice(5,7)-1], w:wid(d, addMonth(d,1)), go:() => this.setState({calMode:'month', calMonth:ym})});
+        lines.push({left:pct(d), w:'1px', color:'#eee8e0'});
+        const y = years[years.length-1]; if (y && y.label === ym.slice(0,4)) y.days += days; else years.push({label:ym.slice(0,4), days}); }
+      years.forEach(y => { y.w = (y.days / total * 100).toFixed(3) + '%'; });
+      if (today >= w0 && today < w1) lines.push({left:pct(today), w:'2px', color:'#a3391c'});
+      const draft = this.state.calDraft || {};
+      const rows = evs.map(e => { const p = plan(e), open = calOpen === e.id;
+        const when = p.range ? dm(e.date) + ' – ' + dm(p.end) : WDAY[wday(e.date)] + ' ' + dm(e.date);
+        const next = p.stages.flatMap(s => s.chips.map(c => ({d:s[c[0]], t:c[1]}))).concat({d:e.date, t:p.range ? 'season starts' : 'event day'})
+          .filter(x => x.d >= today).sort((a,b) => a.d.localeCompare(b.d))[0];
+        const bars = p.stages.filter(s => s.k !== 'infl').map(s => ({left:pct(s.start), width:s.dot ? '10px' : wid(s.start,s.finish), ml:s.dot ? '-5px' : '0', minW:'3px',
+          top:'13px', h:'10px', color:s.color, radius:s.dot ? '50%' : '3px', tip:s.name + ': ' + dm(s.start) + (s.dot ? '' : ' – ' + dm(s.finish))}));
+        bars.push({left:pct(e.date), width:wid(e.date, shift(p.end,1)), ml:'0', minW:'4px', top:'6px', h:'24px', color:'#2b2622', radius:'2px', tip:e.name + ': ' + when});
+        return {name:e.name, dateLabel:(e.moon ? '≈ ' : '') + when, open, rowBg:open ? '#fbf9f6' : '#fff', bars,
+          status:next ? 'Next: ' + next.t + ', ' + dm(next.d) : today > p.end ? 'Passed' : 'On now',
+          statusColor:next && today >= p.stages[0].start ? '#a4532e' : '#6b625a',
+          stages:p.stages.map(s => { const now = today >= s.start && today <= s.finish;
+            return {name:s.name, color:s.color, left:pct(s.start), width:s.dot ? '10px' : wid(s.start,s.finish), ml:s.dot ? '-5px' : '0', radius:s.dot ? '50%' : '3px',
+              meta:dm(s.start) + (s.dot ? '' : ' – ' + dm(s.finish)) + ' · ' + s.owner + (now ? ' · now' : ''), metaColor:now ? '#a4532e' : '#6b625a'}; }),
+          draftDate:open && draft.date != null ? draft.date : e.date, draftEnd:open && draft.end != null ? draft.end : (okDate(e.end) ? e.end : ''),
+          toggle:() => this.setState(open ? {calOpen:null} : openEv(e)),
+          setName:x => upd(e.id, {name:x.target.value}),
+          setDraftDate:x => this.setState({calDraft:{...this.state.calDraft, date:x.target.value}}),
+          setDraftEnd:x => this.setState({calDraft:{...this.state.calDraft, end:x.target.value}}),
+          apply:() => { const d = this.state.calDraft || {}; if (!okDate(d.date)) { window.alert('Enter a valid event date.'); return; }
+            upd(e.id, {date:d.date, end:okDate(d.end) && d.end > d.date ? d.end : ''}); },
+          remove:() => { if (window.confirm('Remove "' + e.name + '" from the calendar?')) this.save({events:all.filter(x => x.id !== e.id), calOpen:null}); }};
+      });
+      return {...base, calHeading:'Initiatives calendar', calSub:'Each event is planned back from its date. Select an event to see its stage dates or change the date.',
+        calYears:years, calMonths:months, calLines:lines, calRows:rows, calEmpty:!rows.length,
+        calDots:dated.filter(i => i.deadline >= w0 && i.deadline < w1).map(i => ({left:pct(i.deadline), color:calSel === i.id ? '#2b2622' : late(i) ? '#a3391c' : catColor(i.category),
+          tip:(i.title || 'Untitled task') + ' · due ' + dm(i.deadline) + ' · ' + i.status, pick:() => this.pickTask(i.id)})),
+        calTaskNote:dated.length + ' with a deadline' + (undated.length ? ' · ' + undated.length + ' without' : '')};
+    }
+    const byDay = {}, put = (d, c) => { (byDay[d] = byDay[d] || []).push(c); };
+    evs.forEach(e => { const p = plan(e), go = () => this.setState({calMode:'year', ...openEv(e)});
+      const evChip = label => ({label, tip:'Event · select to see its plan', bg:'#2b2622', fg:'#fff', border:'#2b2622', accent:'#2b2622', strike:'none', pick:go});
+      put(e.date, evChip(p.range ? e.name + ' starts' : e.name)); if (p.range) put(p.end, evChip(e.name + ' ends'));
+      p.stages.forEach(s => { if (person && !owners(s.owner).includes(person)) return;
+        s.chips.forEach(c => put(s[c[0]], {label:e.name + ': ' + c[1], tip:s.name + ' · ' + s.owner, bg:s.tint, fg:'#2b2622', border:s.tint, accent:s.color, strike:'none', pick:go})); });
+    });
+    dated.forEach(i => put(i.deadline, taskChip(i)));
+    const first = (/^\d{4}-\d{2}$/.test(this.state.calMonth || '') ? this.state.calMonth : today.slice(0,7)) + '-01', nm = addMonth(first,1), days = [];
+    for (let d = shift(first, -wday(first)); d < nm || days.length % 7; d = shift(d,1)) { const date = d, inM = d.slice(0,7) === first.slice(0,7), wd = wday(d);
+      days.push({num:+d.slice(8), bg:!inM ? '#f6f3ee' : wd >= 5 ? '#faf8f5' : '#fff', numColor:d === today ? '#fff' : inM ? '#2b2622' : '#6b625a', numBg:d === today ? '#2b2622' : 'transparent',
+        chips:byDay[d] || [], add:() => this.addOn(date), addLabel:'Add a task due ' + dm(d)}); }
+    const nav = n => () => this.setState({calMonth:addMonth(first,n).slice(0,7)});
+    return {...base, calHeading:new Date(T(first)).toLocaleDateString('en-GB',{timeZone:'UTC',month:'long',year:'numeric'}), calSub:'Stage milestones and tracker deadlines. Select a task to edit it below the calendar; + adds a task due that day.',
+      calDow:WDAY, calDays:days, calPrev:nav(-1), calNext:nav(1), calToday:() => this.setState({calMonth:today.slice(0,7)}),
+      calUndatedOn:undated.length > 0, calUndatedLabel:'No deadline (' + undated.length + ')', calUndated:undated.map(taskChip)};
   }
   add(cat) { this.save({items:[...this.state.items,{id:uid(),category:cat||CATS[0],title:'',owner:this.state.person||'',deadline:'',status:'To do',priority:'Medium',next:''}]}); }
   exportCsv() {
@@ -314,6 +596,7 @@ class Component extends DCLogic {
       const [l,c,h,fg] = STATUS[i.status] || STATUS['To do'];
       const steps = i.steps||[], sd = steps.filter(s=>s.done).length;
       const setSteps = fn => this.updSteps(i.id, fn);
+      const own = owners(i.owner);
       return {...i,
         rowBg: od ? '#fdf3ef' : (done ? '#faf8f5' : '#fff'),
         strike: done ? 'line-through' : 'none',
@@ -322,7 +605,11 @@ class Component extends DCLogic {
         statusBg:`oklch(${l} ${c} ${h})`, statusFg:fg,
         prioColor: i.priority==='High' ? '#a3391c' : i.priority==='Low' ? '#8a8077' : '#2b2622',
         setTitle:e=>this.upd(i.id,'title',e.target.value), setCategory:e=>this.upd(i.id,'category',e.target.value),
-        setOwner:e=>this.upd(i.id,'owner',e.target.value), setDeadline:e=>this.upd(i.id,'deadline',e.target.value),
+        ownerLabel: own.length ? own.join(', ') : 'Unassigned', ownerColor: own.length ? '#2b2622' : '#6b625a',
+        ownerOpenDisplay: this.state.ownerOpen===i.id ? 'flex' : 'none',
+        toggleOwners:()=>this.setState({ownerOpen: this.state.ownerOpen===i.id ? null : i.id}),
+        ownerOpts: [...new Set([...team, ...own])].map(p => ({name:p, on:own.includes(p),
+          toggle:()=>this.upd(i.id,'owner',(own.includes(p) ? own.filter(x=>x!==p) : [...own,p]).join(', '))})), setDeadline:e=>this.upd(i.id,'deadline',e.target.value),
         setStatus:e=>this.upd(i.id,'status',e.target.value), setPriority:e=>this.upd(i.id,'priority',e.target.value),
         stepsDisplay: steps.length ? 'flex' : 'none',
         stepsLabel: steps.length ? `${sd}/${steps.length} done` : '',
@@ -340,9 +627,12 @@ class Component extends DCLogic {
         remove:()=>{ if (window.confirm('Delete "' + (i.title || 'this task') + '"?')) this.save({items:this.state.items.filter(x=>x.id!==i.id)}); }
       };
     };
-    let vis = items.filter(i => (!person || i.owner===person) && (!hideDone || i.status!=='Done'));
+    let vis = items.filter(i => (!person || owners(i.owner).includes(person)) && (!hideDone || i.status!=='Done'));
     const byDate = (a,b) => (a.status==='Done')-(b.status==='Done') || (a.deadline||'9999').localeCompare(b.deadline||'9999');
-    const groups = view==='cat'
+    const sel = view==='cal' ? items.find(i => i.id===this.state.calSel) : null;
+    const cal = view==='cal' ? this.calVals(vis, today) : CAL_OFF;
+    const groups = view==='cal' ? (sel ? [{name:'Selected task', domId:'cal-selected', color:'#2b2622', count:'', items:[decorate(sel)], empty:false, add:()=>this.addOn('')}] : [])
+      : view==='cat'
       ? CATS.map((c,k) => { const its = vis.filter(i=>i.category===c).sort(byDate).map(decorate);
           return {name:c,color:`oklch(0.68 0.12 ${HUES[k]})`,count:its.length,items:its,empty:its.length===0,add:()=>this.add(c)}; })
       : [{name:'All items — soonest deadline first',color:'#2b2622',count:vis.length,items:[...vis].sort(byDate).map(decorate),empty:vis.length===0,add:()=>this.add()}];
@@ -353,6 +643,7 @@ class Component extends DCLogic {
       ...this.gate(),
       categories:CATS, team, teamText, groups, personFilter:person, hideDone,
       viewCatBg: view==='cat'?'#fff':'transparent', viewDateBg: view==='date'?'#fff':'transparent',
+      viewCalBg: view==='cal'?'#fff':'transparent', setViewCal:()=>this.save({view:'cal'}), ...cal,
       setViewCat:()=>this.save({view:'cat'}), setViewDate:()=>this.save({view:'date'}),
       onPerson:e=>this.setState({person:e.target.value}),
       toggleDone:()=>this.save({hideDone:!hideDone}),
